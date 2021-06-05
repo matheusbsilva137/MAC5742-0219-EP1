@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+#include <pthread.h>
 
 double c_x_min;
 double c_x_max;
@@ -11,6 +12,7 @@ double pixel_width;
 double pixel_height;
 
 int iteration_max = 200;
+double escape_radius_squared = 4;
 
 int image_size;
 unsigned char **image_buffer;
@@ -39,6 +41,12 @@ int colors[17][3] = {
                         {106, 52, 3},
                         {16, 16, 16},
                     };
+
+typedef struct coordinates {
+    int i_x;
+    int i_y;
+    double c_y;
+} Coordinates;
 
 void allocate_image_buffer(){
     int rgb_size = 3;
@@ -111,14 +119,48 @@ void write_to_file(){
     fclose(file);
 };
 
+void* compute_pixel(void* threadArg){
+    Coordinates* coordinates = (Coordinates*) threadArg;
+
+    double c_y         = coordinates->c_y;
+    int i_y         = coordinates->i_y;
+    int i_x         = coordinates->i_x;
+    double c_x         = c_x_min + i_x * pixel_width;
+
+    double z_x         = 0.0;
+    double z_y         = 0.0;
+
+    double z_x_squared = 0.0;
+    double z_y_squared = 0.0;
+    int iteration;
+
+    for(iteration = 0;
+        iteration < iteration_max && \
+        ((z_x_squared + z_y_squared) < escape_radius_squared);
+        iteration++){
+        z_y         = 2 * z_x * z_y + c_y;
+        z_x         = z_x_squared - z_y_squared + c_x;
+
+        z_x_squared = z_x * z_x;
+        z_y_squared = z_y * z_y;
+    };
+
+    update_rgb_buffer(iteration, i_x, i_y);
+    free(threadArg);
+    pthread_exit(NULL);
+}
+
 void compute_mandelbrot(){
     double z_x;
     double z_y;
     double z_x_squared;
     double z_y_squared;
-    double escape_radius_squared = 4;
+    pthread_attr_t attr;
+    pthread_t xThreads[i_x_max];
 
-    int iteration;
+    pthread_attr_init(&attr);
+    pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
+
     int i_x;
     int i_y;
 
@@ -133,28 +175,18 @@ void compute_mandelbrot(){
         };
 
         for(i_x = 0; i_x < i_x_max; i_x++){
-            c_x         = c_x_min + i_x * pixel_width;
-
-            z_x         = 0.0;
-            z_y         = 0.0;
-
-            z_x_squared = 0.0;
-            z_y_squared = 0.0;
-
-            for(iteration = 0;
-                iteration < iteration_max && \
-                ((z_x_squared + z_y_squared) < escape_radius_squared);
-                iteration++){
-                z_y         = 2 * z_x * z_y + c_y;
-                z_x         = z_x_squared - z_y_squared + c_x;
-
-                z_x_squared = z_x * z_x;
-                z_y_squared = z_y * z_y;
-            };
-
-            update_rgb_buffer(iteration, i_x, i_y);
+            Coordinates* coord = malloc(sizeof(Coordinates));
+            coord->i_x = i_x;
+            coord->i_y = i_y;
+            coord->c_y = c_y;
+            pthread_create(&xThreads[i_x], &attr, compute_pixel, (void*) coord);
         };
+
+        for (i_x = 0; i_x < i_x_max; i_x++) {
+            pthread_join(xThreads[i_x], NULL);
+        }
     };
+    pthread_attr_destroy(&attr);
 };
 
 int main(int argc, char *argv[]){
