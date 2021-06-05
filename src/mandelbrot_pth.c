@@ -3,6 +3,9 @@
 #include <math.h>
 #include <pthread.h>
 
+#define NUM_THREADS 1
+
+
 double c_x_min;
 double c_x_max;
 double c_y_min;
@@ -125,27 +128,40 @@ void* compute_pixel(void* threadArg){
     double c_y         = coordinates->c_y;
     int i_y         = coordinates->i_y;
     int i_x         = coordinates->i_x;
-    double c_x         = c_x_min + i_x * pixel_width;
+    double c_x;
 
-    double z_x         = 0.0;
-    double z_y         = 0.0;
+    double z_x;
+    double z_y;
 
-    double z_x_squared = 0.0;
-    double z_y_squared = 0.0;
+    double z_x_squared;
+    double z_y_squared;
     int iteration;
+    int chunk_size = image_size/NUM_THREADS;
 
-    for(iteration = 0;
-        iteration < iteration_max && \
-        ((z_x_squared + z_y_squared) < escape_radius_squared);
-        iteration++){
-        z_y         = 2 * z_x * z_y + c_y;
-        z_x         = z_x_squared - z_y_squared + c_x;
+    for(int j = i_x; j < i_x + chunk_size; j++){
+        c_x         = c_x_min + j * pixel_width;
 
-        z_x_squared = z_x * z_x;
-        z_y_squared = z_y * z_y;
-    };
+        z_x         = 0.0;
+        z_y         = 0.0;
 
-    update_rgb_buffer(iteration, i_x, i_y);
+        z_x_squared = 0.0;
+        z_y_squared = 0.0;
+
+        for(iteration = 0;
+            iteration < iteration_max && \
+            ((z_x_squared + z_y_squared) < escape_radius_squared);
+            iteration++){
+            z_y         = 2 * z_x * z_y + c_y;
+            z_x         = z_x_squared - z_y_squared + c_x;
+
+            z_x_squared = z_x * z_x;
+            z_y_squared = z_y * z_y;
+        };
+
+        update_rgb_buffer(iteration, j, i_y);
+    }
+
+    
     free(threadArg);
     pthread_exit(NULL);
 }
@@ -155,6 +171,7 @@ void compute_mandelbrot(){
     double z_y;
     double z_x_squared;
     double z_y_squared;
+    int chunk_size = image_size/NUM_THREADS;
     pthread_attr_t attr;
     pthread_t xThreads[i_x_max];
 
@@ -169,21 +186,23 @@ void compute_mandelbrot(){
 
     for(i_y = 0; i_y < i_y_max; i_y++){
         c_y = c_y_min + i_y * pixel_height;
+        i_x = 0;
 
         if(fabs(c_y) < pixel_height / 2){
             c_y = 0.0;
         };
 
-        for(i_x = 0; i_x < i_x_max; i_x++){
+        for(int i = 0; i < NUM_THREADS; i++){
             Coordinates* coord = malloc(sizeof(Coordinates));
             coord->i_x = i_x;
             coord->i_y = i_y;
             coord->c_y = c_y;
-            pthread_create(&xThreads[i_x], &attr, compute_pixel, (void*) coord);
+            pthread_create(&xThreads[i], &attr, compute_pixel, (void*) coord);
+            i_x += chunk_size;
         };
 
-        for (i_x = 0; i_x < i_x_max; i_x++) {
-            pthread_join(xThreads[i_x], NULL);
+        for (int i = 0; i < NUM_THREADS; i++) {
+            pthread_join(xThreads[i], NULL);
         }
     };
     pthread_attr_destroy(&attr);
