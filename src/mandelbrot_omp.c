@@ -1,6 +1,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+#include <omp.h>
+
+#define NUM_THREADS 32
 
 double c_x_min;
 double c_x_max;
@@ -43,8 +46,13 @@ int colors[17][3] = {
 void allocate_image_buffer(){
     int rgb_size = 3;
     image_buffer = (unsigned char **) malloc(sizeof(unsigned char *) * image_buffer_size);
+    int chunk_size = image_size/NUM_THREADS;
+    int i;
 
-    for(int i = 0; i < image_buffer_size; i++){
+    #pragma omp parallel for              \
+    shared(image_buffer, chunk_size, rgb_size) private(i) \
+    schedule(static, chunk_size)
+    for(i = 0; i < image_buffer_size; i++){
         image_buffer[i] = (unsigned char *) malloc(sizeof(unsigned char) * rgb_size);
     };
 };
@@ -117,6 +125,7 @@ void compute_mandelbrot(){
     double z_x_squared;
     double z_y_squared;
     double escape_radius_squared = 4;
+    int chunk_size = image_size/NUM_THREADS;
 
     int iteration;
     int i_x;
@@ -132,6 +141,9 @@ void compute_mandelbrot(){
             c_y = 0.0;
         };
 
+        #pragma omp parallel for              \
+        shared(c_y, chunk_size) private(c_x, i_x, z_x, z_y, z_x_squared, z_y_squared, iteration) \
+        schedule(static, chunk_size)
         for(i_x = 0; i_x < i_x_max; i_x++){
             c_x         = c_x_min + i_x * pixel_width;
 

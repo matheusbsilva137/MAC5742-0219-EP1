@@ -3,8 +3,7 @@
 #include <math.h>
 #include <pthread.h>
 
-#define NUM_THREADS 1
-
+#define NUM_THREADS 8
 
 double c_x_min;
 double c_x_max;
@@ -215,7 +214,7 @@ int main(int argc, char *argv[]){
 
     compute_mandelbrot();
 
-    write_to_file();
+    //write_to_file();
 
     return 0;
 };
