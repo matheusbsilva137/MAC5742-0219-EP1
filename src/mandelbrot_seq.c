@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+#include <time.h>
 
 double c_x_min;
 double c_x_max;
@@ -39,6 +40,12 @@ int colors[17][3] = {
                         {106, 52, 3},
                         {16, 16, 16},
                     };
+
+static double rtclock() {
+    struct timespec t;
+    clock_gettime(CLOCK_REALTIME, &t);
+    return t.tv_sec + t.tv_nsec * 1e-9;
+}
 
 void allocate_image_buffer(){
     int rgb_size = 3;
@@ -158,6 +165,7 @@ void compute_mandelbrot(){
 };
 
 int main(int argc, char *argv[]){
+    double initial = rtclock();
     init(argc, argv);
 
     allocate_image_buffer();
@@ -165,6 +173,8 @@ int main(int argc, char *argv[]){
     compute_mandelbrot();
 
     write_to_file();
+    double final = rtclock();
+    printf("%lf,", final - initial);
 
     return 0;
 };

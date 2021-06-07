@@ -7,6 +7,7 @@ CC_OPT=-std=c11
 
 CC_OMP=-fopenmp
 CC_PTH=-pthread
+CC_TIME=-D_POSIX_C_SOURCE=199309L
 
 .PHONY: all
 all: $(OUTPUT)_omp $(OUTPUT)_pth $(OUTPUT)_seq
@@ -18,7 +19,7 @@ $(OUTPUT)_pth: $(OUTPUT)_pth.c
 	$(CC) -o $(OUTPUT)_pth $(CC_OPT) $(CC_PTH) $(OUTPUT)_pth.c
 
 $(OUTPUT)_seq: $(OUTPUT)_seq.c
-	$(CC) -o $(OUTPUT)_seq $(CC_OPT) $(OUTPUT)_seq.c
+	$(CC) -o $(OUTPUT)_seq $(CC_OPT) $(CC_TIME) $(OUTPUT)_seq.c
 
 .PHONY: clean
 clean:
