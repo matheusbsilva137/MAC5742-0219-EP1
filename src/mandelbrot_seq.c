@@ -165,16 +165,15 @@ void compute_mandelbrot(){
 };
 
 int main(int argc, char *argv[]){
-    double initial = rtclock();
     init(argc, argv);
 
     allocate_image_buffer();
-
+    double initial = rtclock();
     compute_mandelbrot();
-
-    write_to_file();
     double final = rtclock();
     printf("%lf,", final - initial);
+
+    //write_to_file();
 
     return 0;
 };

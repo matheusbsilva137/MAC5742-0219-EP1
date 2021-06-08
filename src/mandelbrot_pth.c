@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include <pthread.h>
+#include <time.h>
 
 #define NUM_THREADS 8
 
@@ -43,6 +44,12 @@ int colors[17][3] = {
                         {106, 52, 3},
                         {16, 16, 16},
                     };
+
+static double rtclock() {
+    struct timespec t;
+    clock_gettime(CLOCK_REALTIME, &t);
+    return t.tv_sec + t.tv_nsec * 1e-9;
+}
 
 typedef struct coordinates {
     int i_x;
@@ -211,10 +218,12 @@ int main(int argc, char *argv[]){
     init(argc, argv);
 
     allocate_image_buffer();
-
+    double initial = rtclock();
     compute_mandelbrot();
+    double final = rtclock();
+    printf("%lf,", final - initial);
 
-    write_to_file();
+    //write_to_file();
 
     return 0;
 };
