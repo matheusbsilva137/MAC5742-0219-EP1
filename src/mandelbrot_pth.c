@@ -4,7 +4,7 @@
 #include <pthread.h>
 #include <time.h>
 
-#define NUM_THREADS 8
+int NUM_THREADS;
 
 double c_x_min;
 double c_x_max;
@@ -67,13 +67,13 @@ void allocate_image_buffer(){
 };
 
 void init(int argc, char *argv[]){
-    if(argc < 6){
-        printf("usage: ./mandelbrot_pth c_x_min c_x_max c_y_min c_y_max image_size\n");
+    if(argc < 7){
+        printf("usage: ./mandelbrot_pth c_x_min c_x_max c_y_min c_y_max image_size num_thr\n");
         printf("examples with image_size = 11500:\n");
-        printf("    Full Picture:         ./mandelbrot_pth -2.5 1.5 -2.0 2.0 11500\n");
-        printf("    Seahorse Valley:      ./mandelbrot_pth -0.8 -0.7 0.05 0.15 11500\n");
-        printf("    Elephant Valley:      ./mandelbrot_pth 0.175 0.375 -0.1 0.1 11500\n");
-        printf("    Triple Spiral Valley: ./mandelbrot_pth -0.188 -0.012 0.554 0.754 11500\n");
+        printf("    Full Picture:         ./mandelbrot_pth -2.5 1.5 -2.0 2.0 11500 1\n");
+        printf("    Seahorse Valley:      ./mandelbrot_pth -0.8 -0.7 0.05 0.15 11500 2\n");
+        printf("    Elephant Valley:      ./mandelbrot_pth 0.175 0.375 -0.1 0.1 11500 4\n");
+        printf("    Triple Spiral Valley: ./mandelbrot_pth -0.188 -0.012 0.554 0.754 11500 8\n");
         exit(0);
     }
     else{
@@ -82,6 +82,7 @@ void init(int argc, char *argv[]){
         sscanf(argv[3], "%lf", &c_y_min);
         sscanf(argv[4], "%lf", &c_y_max);
         sscanf(argv[5], "%d", &image_size);
+        sscanf(argv[6], "%d", &NUM_THREADS);
 
         i_x_max           = image_size;
         i_y_max           = image_size;
@@ -218,6 +219,7 @@ int main(int argc, char *argv[]){
     init(argc, argv);
 
     allocate_image_buffer();
+    
     double initial = rtclock();
     compute_mandelbrot();
     double final = rtclock();
