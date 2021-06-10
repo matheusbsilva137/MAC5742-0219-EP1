@@ -141,6 +141,8 @@ void compute_mandelbrot(){
 
     double c_x;
     double c_y;
+    if (chunk_size == 0)
+        chunk_size = 1;
 
     for(i_y = 0; i_y < i_y_max; i_y++){
         c_y = c_y_min + i_y * pixel_height;
@@ -185,7 +187,7 @@ int main(int argc, char *argv[]){
     double initial = rtclock();
     compute_mandelbrot();
     double final = rtclock();
-    printf("%lf,", final - initial);
+    printf("%lf", final - initial);
 
     //write_to_file();
 

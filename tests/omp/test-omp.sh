@@ -1,5 +1,9 @@
 #!/bin/bash
 for((k=1; k<=32; k*=2)): do
+    echo "16,32,64,128,256,512,1024,2048,4196,8192" >> "/full/full_$k.csv"
+    echo "16,32,64,128,256,512,1024,2048,4196,8192" >> "/seahorse/seahorse_$k.csv"
+    echo "16,32,64,128,256,512,1024,2048,4196,8192" >> "/elephant/elephant_$k.csv"
+    echo "16,32,64,128,256,512,1024,2048,4196,8192" >> "/triple_spiral/triple_spiral_$k.csv"
     for ((j=1; j<=10; j++)); do
         full=""
         seahorse=""

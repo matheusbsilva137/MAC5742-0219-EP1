@@ -132,7 +132,7 @@ void write_to_file(){
 void* compute_pixel(void* threadArg){
     Coordinates* coordinates = (Coordinates*) threadArg;
 
-    double c_y         = coordinates->c_y;
+    double c_y      = coordinates->c_y;
     int i_y         = coordinates->i_y;
     int i_x         = coordinates->i_x;
     double c_x;
@@ -144,6 +144,8 @@ void* compute_pixel(void* threadArg){
     double z_y_squared;
     int iteration;
     int chunk_size = image_size/NUM_THREADS;
+    if (chunk_size == 0 && image_size != 0)
+        chunk_size = 1;
 
     for(int j = i_x; j < i_x + chunk_size; j++){
         c_x         = c_x_min + j * pixel_width;
@@ -168,7 +170,6 @@ void* compute_pixel(void* threadArg){
         update_rgb_buffer(iteration, j, i_y);
     }
 
-    
     free(threadArg);
     pthread_exit(NULL);
 }
@@ -180,7 +181,7 @@ void compute_mandelbrot(){
     double z_y_squared;
     int chunk_size = image_size/NUM_THREADS;
     pthread_attr_t attr;
-    pthread_t xThreads[i_x_max];
+    pthread_t xThreads[NUM_THREADS];
 
     pthread_attr_init(&attr);
     pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
@@ -190,6 +191,11 @@ void compute_mandelbrot(){
 
     double c_x;
     double c_y;
+    int busy_threads = NUM_THREADS;
+    if (chunk_size == 0){
+        chunk_size = 1;
+        busy_threads = i_y_max;
+    }
 
     for(i_y = 0; i_y < i_y_max; i_y++){
         c_y = c_y_min + i_y * pixel_height;
@@ -199,7 +205,7 @@ void compute_mandelbrot(){
             c_y = 0.0;
         };
 
-        for(int i = 0; i < NUM_THREADS; i++){
+        for(int i = 0; i < busy_threads; i++){
             Coordinates* coord = malloc(sizeof(Coordinates));
             coord->i_x = i_x;
             coord->i_y = i_y;
@@ -208,10 +214,27 @@ void compute_mandelbrot(){
             i_x += chunk_size;
         };
 
-        for (int i = 0; i < NUM_THREADS; i++) {
+        for (int i = 0; i < busy_threads; i++) {
             pthread_join(xThreads[i], NULL);
         }
     };
+
+    // caso necessário, cria o restante das threads que executarão tarefas vazias
+    if (NUM_THREADS > busy_threads) {
+        image_size = 0;
+        for(int i = busy_threads; i < NUM_THREADS; i++){
+            Coordinates* coord = malloc(sizeof(Coordinates));
+            coord->i_x = i_x;
+            coord->i_y = i_y;
+            coord->c_y = c_y;
+            pthread_create(&xThreads[i], &attr, compute_pixel, (void*) coord);
+            i_x += chunk_size;
+        };
+
+        for (int i = i_y_max; i < NUM_THREADS; i++) {
+            pthread_join(xThreads[i], NULL);
+        }
+    }
     pthread_attr_destroy(&attr);
 };
 
@@ -223,7 +246,7 @@ int main(int argc, char *argv[]){
     double initial = rtclock();
     compute_mandelbrot();
     double final = rtclock();
-    printf("%lf,", final - initial);
+    printf("%lf", final - initial);
 
     //write_to_file();
 
