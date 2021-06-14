@@ -4,7 +4,7 @@
 #include <omp.h>
 #include <time.h>
 
-int NUM_THREADS;
+#define NUM_THREADS 32
 
 double c_x_min;
 double c_x_max;
@@ -44,12 +44,6 @@ int colors[17][3] = {
                         {16, 16, 16},
                     };
 
-static double rtclock() {
-  struct timespec t;
-  clock_gettime(CLOCK_REALTIME, &t);
-  return t.tv_sec + t.tv_nsec * 1e-9;
-}
-
 void allocate_image_buffer(){
     int rgb_size = 3;
     image_buffer = (unsigned char **) malloc(sizeof(unsigned char *) * image_buffer_size);
@@ -65,13 +59,13 @@ void allocate_image_buffer(){
 };
 
 void init(int argc, char *argv[]){
-    if(argc < 7){
-        printf("usage: ./mandelbrot_omp c_x_min c_x_max c_y_min c_y_max image_size num_thr\n");
+    if(argc < 6){
+        printf("usage: ./mandelbrot_omp c_x_min c_x_max c_y_min c_y_max image_size\n");
         printf("examples with image_size = 11500:\n");
-        printf("    Full Picture:         ./mandelbrot_omp -2.5 1.5 -2.0 2.0 11500 1\n");
-        printf("    Seahorse Valley:      ./mandelbrot_omp -0.8 -0.7 0.05 0.15 11500 2\n");
-        printf("    Elephant Valley:      ./mandelbrot_omp 0.175 0.375 -0.1 0.1 11500 4\n");
-        printf("    Triple Spiral Valley: ./mandelbrot_omp -0.188 -0.012 0.554 0.754 11500 8\n");
+        printf("    Full Picture:         ./mandelbrot_omp -2.5 1.5 -2.0 2.0 11500\n");
+        printf("    Seahorse Valley:      ./mandelbrot_omp -0.8 -0.7 0.05 0.15 11500\n");
+        printf("    Elephant Valley:      ./mandelbrot_omp 0.175 0.375 -0.1 0.1 11500\n");
+        printf("    Triple Spiral Valley: ./mandelbrot_omp -0.188 -0.012 0.554 0.754 11500\n");
         exit(0);
     }
     else{
@@ -80,7 +74,6 @@ void init(int argc, char *argv[]){
         sscanf(argv[3], "%lf", &c_y_min);
         sscanf(argv[4], "%lf", &c_y_max);
         sscanf(argv[5], "%d", &image_size);
-        sscanf(argv[6], "%d", &NUM_THREADS);
 
         i_x_max           = image_size;
         i_y_max           = image_size;
@@ -184,12 +177,9 @@ int main(int argc, char *argv[]){
 
     allocate_image_buffer();
 
-    double initial = rtclock();
     compute_mandelbrot();
-    double final = rtclock();
-    printf("%lf", final - initial);
 
-    //write_to_file();
+    write_to_file();
 
     return 0;
 };
